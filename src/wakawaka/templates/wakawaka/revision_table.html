@@ -1,6 +1,7 @@
 {% load i18n %}
 
 <form method="GET" action="{% url wakawaka_changes slug=page.slug %}">
+{% csrf_token %}
 <table class="history" border="1">
 <tr>
 	<th>{% trans "Compare" %}</th>

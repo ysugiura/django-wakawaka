@@ -24,6 +24,7 @@
 	{% endif %}
 
 	<form class="wakawaka_edit_form" method="POST" action="">
+	    {% csrf_token %}
 		{{ form.as_p }}
 		<p>
             <input type="submit" value="{% trans "Save changes" %}" />
@@ -39,6 +40,7 @@
 
 	{% if not page.is_initial and delete_form %}
 	<form class="wakawaka_delete_form" method="POST" action="" onsubmit="return confirm('{% trans "Please confirm deletion" %}');">
+	    {% csrf_token %}
 		{{ delete_form.as_p }}
 		<p>
 			<input type="submit" value="{% trans "Delete" %}" />
