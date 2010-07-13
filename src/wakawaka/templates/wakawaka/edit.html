@@ -2,6 +2,15 @@
 
 {% load i18n %}
 
+{% block extrahead %}
+	{{ block.super }}
+
+	{# Add support for the Universal Edit Button #}
+	{% if perms.wakawaka.change_wikipage %}
+	<link rel="edit" title="{% trans "Edit this page" %}" href="{% url wakawaka_edit slug=page.slug %}" />
+	{% endif %}
+{% endblock %}
+
 {% block title %}
     {% if page.is_initial %}
         {% blocktrans with page.slug as slug %}Add {{ slug  }}{% endblocktrans %}
