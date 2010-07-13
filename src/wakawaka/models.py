@@ -34,6 +34,11 @@ class WikiPage(models.Model):
     def rev(self, rev_id):
         return self.revisions.get(pk=rev_id)
 
+    @models.permalink
+    def get_absolute_url(self):
+        return ('wakawaka_page', [], {'slug': self.slug})
+
+
 class Revision(models.Model):
     page = models.ForeignKey(WikiPage, related_name='revisions')
     content = models.TextField(_('content'))
@@ -48,6 +53,10 @@ class Revision(models.Model):
         verbose_name_plural = _("Revisions")
         ordering = ['-modified']
         get_latest_by = 'modified'
+
+    @models.permalink
+    def get_absolute_url(self):
+        return ('wakawaka_page', [], {'slug': self.page.slug, 'rev_id': self.pk})
 
     def __unicode__(self):
         return ugettext('Revision %(created)s for %(page_slug)s') % {
