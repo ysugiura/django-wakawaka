@@ -9,15 +9,18 @@ from django.utils.translation import ugettext, ugettext_lazy as _
 from django.core.exceptions import ObjectDoesNotExist
 from wakawaka.forms import WikiPageForm, DeleteWikiPageForm
 from wakawaka.models import WikiPage, Revision
+from wakawaka.settings import DEFAULT_INDEX, LOCK_CACHE_PREFIX, LOCK_TIMEOUT
 
 __all__ = ['index', 'page', 'edit', 'revisions', 'changes', 'revision_list', 'page_list']
+
+
 
 def index(request, template_name='wakawaka/page.html'):
     '''
     Redirects to the default wiki index name.
     '''
     kwargs = {
-        'slug': getattr(settings, 'WAKAWAKA_DEFAULT_INDEX', 'WikiIndex'),
+        'slug': DEFAULT_INDEX,
     }
     # be group aware
     group = getattr(request, "group", None)
