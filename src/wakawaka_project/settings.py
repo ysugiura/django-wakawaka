@@ -87,6 +87,8 @@ LOGIN_URL = '/accounts/login/'
 LOGOUT_URL = '/accounts/logout/'
 LOGIN_REDIRECT_URL = '/'
 
+CACHE_BACKEND = 'locmem://'
+
 try:
     from settings_local import *
 except ImportError:
