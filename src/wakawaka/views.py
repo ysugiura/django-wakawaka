@@ -176,7 +176,12 @@ def edit(request, slug, rev_id=None, template_name='wakawaka/edit.html',
         initial = {'content': _('Describe your new page %s here...' % slug),
                    'message': _('Initial revision')}
 
-    # Creating/resetting the lock
+    # Creating/canceling/resetting the lock
+    cancel_lock = have_lock and request.GET.get('cancel_lock')
+    if is_locked and cancel_lock:
+        cache.delete(lock_cache_key)
+        return HttpResponseRedirect(page.get_absolute_url())
+
     allowed_to_reset = request.user.has_perm('wakawaka.reset_lock')
     reset_lock = allowed_to_reset and request.GET.get('reset_lock')
     if not is_locked or reset_lock:
