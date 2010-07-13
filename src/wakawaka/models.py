@@ -19,6 +19,9 @@ class WikiPage(models.Model):
         verbose_name = _("Wiki page")
         verbose_name_plural = _("Wiki pages")
         ordering = ['slug']
+        permissions = (
+            ("reset_lock", "Can reset the edit lock of a wiki page."),
+        )
 
     def __unicode__(self):
         return self.slug
