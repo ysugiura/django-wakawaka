@@ -1,7 +1,6 @@
 import difflib
 from datetime import datetime, timedelta
 
-from django.conf import settings
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.urlresolvers import reverse
@@ -17,8 +16,6 @@ from wakawaka.models import WikiPage, Revision
 from wakawaka.settings import DEFAULT_INDEX, LOCK_CACHE_PREFIX, LOCK_TIMEOUT
 
 __all__ = ['index', 'page', 'edit', 'revisions', 'changes', 'revision_list', 'page_list']
-
-
 
 def index(request, template_name='wakawaka/page.html'):
     '''
