@@ -1,12 +1,17 @@
 import difflib
+from datetime import datetime, timedelta
+
 from django.conf import settings
+from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse
+from django.http import Http404, HttpResponseRedirect, HttpResponseBadRequest, HttpResponseForbidden
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
-from django.http import Http404, HttpResponseRedirect, HttpResponseBadRequest,\
-    HttpResponseNotFound, HttpResponseForbidden
-from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext, ugettext_lazy as _
-from django.core.exceptions import ObjectDoesNotExist
+
+from django.contrib.auth.models import User
+
 from wakawaka.forms import WikiPageForm, DeleteWikiPageForm
 from wakawaka.models import WikiPage, Revision
 from wakawaka.settings import DEFAULT_INDEX, LOCK_CACHE_PREFIX, LOCK_TIMEOUT
@@ -107,6 +112,33 @@ def edit(request, slug, rev_id=None, template_name='wakawaka/edit.html',
         bridge = None
         group_base = None
 
+    lock_owner = lock = None
+
+    if request.user.is_authenticated():
+        lock_id = request.user.id
+    else:
+        lock_id = request.session.session_key
+
+    if group:
+        lock_cache_key = "%s-lock-%s" % (LOCK_CACHE_PREFIX, group.slug, slug)
+    else:
+        lock_cache_key = "%s-lock-%s" % (LOCK_CACHE_PREFIX, slug)
+
+    cached = cache.get(lock_cache_key)
+    if cached is not None:
+        lock, lock_authorized, lock_timestamp = cached
+    else:
+        lock_authorized = request.user.is_authenticated()
+        lock_timestamp = datetime.now()
+
+    is_locked = lock is not None
+    have_lock = lock == lock_id
+
+    if lock_authorized and lock:
+        lock_owner = User.objects.get(pk=lock)
+    else:
+        lock_owner = None
+
     # Get the page for slug and get a specific revision, if given
     try:
         if group:
@@ -119,6 +151,9 @@ def edit(request, slug, rev_id=None, template_name='wakawaka/edit.html',
 
         # Do not allow editing wiki pages if the user has no permission
         if not request.user.has_perms(('wakawaka.change_wikipage', 'wakawaka.change_revision' )):
+            if have_lock:
+                # Removing lock in case permissions were revoked or lock not removed before.
+                cache.delete(lock_cache_key)
             return HttpResponseForbidden(ugettext('You don\'t have permission to edit pages.'))
 
         if rev_id:
@@ -143,6 +178,15 @@ def edit(request, slug, rev_id=None, template_name='wakawaka/edit.html',
         rev = None
         initial = {'content': _('Describe your new page %s here...' % slug),
                    'message': _('Initial revision')}
+
+    # Creating/resetting the lock
+    allowed_to_reset = request.user.has_perm('wakawaka.reset_lock')
+    reset_lock = allowed_to_reset and request.GET.get('reset_lock')
+    if not is_locked or reset_lock:
+        cache.set(lock_cache_key, (lock_id, lock_authorized, datetime.now()), LOCK_TIMEOUT)
+        if reset_lock:
+            return HttpResponseRedirect(".")
+        is_locked = have_lock = True
 
     # Don't display the delete form if the user has nor permission
     delete_form = None
@@ -182,6 +226,10 @@ def edit(request, slug, rev_id=None, template_name='wakawaka/edit.html',
                     page.save()
 
                 form.save(request, page)
+
+                if have_lock:
+                    # Removing lock in case permissions were revoked or lock not removed before.
+                    cache.delete(lock_cache_key)
                 
                 kwargs = {
                     'slug': page.slug,
@@ -202,6 +250,13 @@ def edit(request, slug, rev_id=None, template_name='wakawaka/edit.html',
         'rev': rev,
         'group': group,
         'group_base': group_base,
+        'is_locked': is_locked,
+        'have_lock': have_lock,
+        'lock_owner': lock_owner,
+        'lock_authorized': lock_authorized,
+        'lock_timestamp': lock_timestamp,
+        'lock_ttl': lock_timestamp + timedelta(seconds=LOCK_TIMEOUT),
+        'allowed_to_reset': allowed_to_reset,
     }
     template_context.update(extra_context)
     return render_to_response(template_name, template_context,
@@ -350,7 +405,7 @@ def page_list(request, template_name='wakawaka/page_list.html', extra_context=No
 
     template_context = {
         'page_list': page_list,
-        'index_slug': getattr(settings, 'WAKAWAKA_DEFAULT_INDEX', 'WikiIndex'),
+        'index_slug': DEFAULT_INDEX,
         'group': group,
         'group_base': group_base,
     }
