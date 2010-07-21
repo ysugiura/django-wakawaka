@@ -117,7 +117,7 @@ def edit(request, slug, rev_id=None, template_name='wakawaka/edit.html',
         lock_id = request.session.session_key
 
     if group:
-        lock_cache_key = "%s-lock-%s" % (LOCK_CACHE_PREFIX, group.slug, slug)
+        lock_cache_key = "%s-lock-%s-%s" % (LOCK_CACHE_PREFIX, group.slug, slug)
     else:
         lock_cache_key = "%s-lock-%s" % (LOCK_CACHE_PREFIX, slug)
 
