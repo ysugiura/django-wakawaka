@@ -1,17 +1,17 @@
 # from http://open.e-scribe.com/browser/python/django/apps/protowiki/templatetags/wikitags.py
 # copyright Paul Bissex, MIT license
 import re
+import urllib 
 from django.core.exceptions import ObjectDoesNotExist
 from django.template import Library, Node, Variable
 from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
 from wakawaka.models import WikiPage
-from wakawaka.urls import WIKI_SLUG
+from wakawaka.settings import WIKI_SLUG
 
 register = Library()
 
-WIKI_WORDS_REGEX = re.compile(r'\b%s\b' % WIKI_SLUG)
-
+WIKI_WORDS_REGEX = re.compile(WIKI_SLUG)
 
 def replace_wikiwords(value, group=None):
     def replace_wikiword(m):
@@ -19,7 +19,7 @@ def replace_wikiwords(value, group=None):
         try:
             page = WikiPage.objects.get(slug=slug)
             kwargs = {
-                'slug': slug,
+                'slug' : urllib.quote(slug.encode('utf-8')), 
             }
             if group:
                 url = group.content_bridge.reverse('wakawaka_page', group, kwargs=kwargs)

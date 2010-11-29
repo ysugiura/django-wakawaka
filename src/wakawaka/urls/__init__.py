@@ -2,7 +2,8 @@ from django.conf.urls.defaults import patterns, url
 from django.contrib.auth.decorators import login_required
 
 from wakawaka import views
-from wakawaka.settings import WIKI_SLUG
+
+WIKI_SLUG = r'(.{1,255})'
 
 urlpatterns = patterns('',
     url(r'^$', views.index, name='wakawaka_index'),
