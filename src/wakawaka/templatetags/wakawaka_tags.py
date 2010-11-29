@@ -45,14 +45,19 @@ def wikify(value):
 
 
 class WikifyContentNode(Node):
-    def __init__(self, content_expr, group_var):
+    def __init__(self, content_expr, group_var, var_name):
         self.content_expr = content_expr
         self.group_var = Variable(group_var)
-    
+        self.var_name = var_name
+        
     def render(self, context):
         content = self.content_expr.resolve(context)
         group = self.group_var.resolve(context)
-        return replace_wikiwords(content, group)
+        if self.var_name:
+            context[self.var_name] =  replace_wikiwords(content, group)         
+            return ''
+        else:
+            return replace_wikiwords(content, group)
 
 @register.tag
 def wikify_content(parser, token):
@@ -61,4 +66,8 @@ def wikify_content(parser, token):
         group_var = bits[2]
     except IndexError:
         group_var = None
-    return WikifyContentNode(parser.compile_filter(bits[1]), group_var)
+    if bits[-2] == 'as':
+        var_name = bits[-1]
+    else:
+        var_name = ''        
+    return WikifyContentNode(parser.compile_filter(bits[1]), group_var, var_name)
