@@ -11,6 +11,7 @@ from wakawaka.settings import WIKI_SLUG
 
 register = Library()
 
+# WIKI_WORDS_REGEX = re.compile(r'\b%s\b' % WIKI_SLUG, re.UNICODE)
 WIKI_WORDS_REGEX = re.compile(WIKI_SLUG)
 
 def replace_wikiwords(value, group=None):

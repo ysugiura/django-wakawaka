@@ -1,10 +1,6 @@
 import difflib
-from datetime import datetime, timedelta
-
-from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.urlresolvers import reverse
-from django.http import Http404, HttpResponseRedirect, HttpResponseBadRequest, HttpResponseForbidden
+from django.conf import settings
+from django.contrib import messages
 from django.shortcuts import render_to_response, get_object_or_404
 from django.template.context import RequestContext
 from django.utils.translation import ugettext, ugettext_lazy as _
@@ -109,33 +105,6 @@ def edit(request, slug, rev_id=None, template_name='wakawaka/edit.html',
         bridge = None
         group_base = None
 
-    lock_owner = lock = None
-
-    if request.user.is_authenticated():
-        lock_id = request.user.id
-    else:
-        lock_id = request.session.session_key
-
-    if group:
-        lock_cache_key = "%s-lock-%s-%s" % (LOCK_CACHE_PREFIX, group.slug, slug)
-    else:
-        lock_cache_key = "%s-lock-%s" % (LOCK_CACHE_PREFIX, slug)
-
-    cached = cache.get(lock_cache_key)
-    if cached is not None:
-        lock, lock_authorized, lock_timestamp = cached
-    else:
-        lock_authorized = request.user.is_authenticated()
-        lock_timestamp = datetime.now()
-
-    is_locked = lock is not None
-    have_lock = lock == lock_id
-
-    if lock_authorized and lock:
-        lock_owner = User.objects.get(pk=lock)
-    else:
-        lock_owner = None
-
     # Get the page for slug and get a specific revision, if given
     try:
         if group:
@@ -165,7 +134,7 @@ def edit(request, slug, rev_id=None, template_name='wakawaka/edit.html',
     # This page does not exist, create a dummy page
     # Note that it's not saved here
     except WikiPage.DoesNotExist:
-
+        
         # Do not allow adding wiki pages if the user has no permission
         if not request.user.has_perms(('wakawaka.add_wikipage', 'wakawaka.add_revision',)):
             return HttpResponseForbidden(ugettext('You don\'t have permission to add wiki pages.'))
@@ -241,8 +210,7 @@ def edit(request, slug, rev_id=None, template_name='wakawaka/edit.html',
                     redirect_to = bridge.reverse('wakawaka_page', group, kwargs=kwargs)
                 else:
                     redirect_to = reverse('wakawaka_page', kwargs=kwargs)
-                
-                request.user.message_set.create(message=ugettext('Your changes to %s were saved' % page.slug))
+                messages.success(request, ugettext('Your changes to %s were saved' % page.slug))
                 return HttpResponseRedirect(redirect_to)
 
     template_context = {
